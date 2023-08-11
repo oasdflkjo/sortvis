@@ -2,131 +2,155 @@
 
 #include <stdlib.h>
 
-bool bubbleSortIteration(int arr[], int n, int *j, int *i)
+bool bubbleSortIteration(SortingData *data)
 {
-    if (*i < n - *j - 1)
+    if (data->iterCounter >= data->arraySize - 1)
     {
-        if (arr[*i] > arr[*i + 1])
+        // If all iterations are done
+        return false; // Return false to indicate sorting is complete
+    }
+
+    bool swapped = false; // Flag to track if any swaps occurred in this iteration
+
+    for (int i = 0; i < data->arraySize - data->iterCounter - 1; i++)
+    {
+        if (data->arr[i] > data->arr[i + 1])
         {
-            // Swap arr[i] and arr[i+1]
-            int temp = arr[*i];
-            arr[*i] = arr[*i + 1];
-            arr[*i + 1] = temp;
+            // Swap the elements
+            int temp = data->arr[i];
+            data->arr[i] = data->arr[i + 1];
+            data->arr[i + 1] = temp;
+            swapped = true;
         }
-        (*i)++;
-        return true; // Return true if sorting is not yet complete
     }
-    else
+
+    if (!swapped && data->iterCounter == 0)
     {
-        (*i) = 0;
-        (*j)++;
-        if (*j == n - 1)
-            return false; // Return false if sorting is complete
-        return true;
+        // If no swaps occurred and it's the first iteration, the array is already sorted
+        return false;
     }
+
+    data->iterCounter++; // Increment the iteration counter
+    return true;         // Return true as more iterations may be required
 }
 
-bool quickSortIteration(int arr[], int n, int *left, int *right, int *stack, int *top)
+bool insertionSortIteration(SortingData *data)
 {
-    if (*left < *right)
+    if (data->iterCounter >= data->arraySize)
     {
-        // Pivot and partition the array
-        int x = arr[*right];
-        int i = (*left - 1);
-        for (int j = *left; j <= *right - 1; j++)
-        {
-            if (arr[j] <= x)
-            {
-                i++;
-                int temp = arr[i];
-                arr[i] = arr[j];
-                arr[j] = temp;
-            }
-        }
-        int temp = arr[i + 1];
-        arr[i + 1] = arr[*right];
-        arr[*right] = temp;
-
-        int pivot = (i + 1);
-
-        // Push right subarray to stack
-        if (pivot + 1 < *right)
-        {
-            stack[++(*top)] = pivot + 1;
-            stack[++(*top)] = *right;
-        }
-
-        // Update right to end of left subarray
-        *right = pivot - 1;
-
-        return true;
+        // If all insertions are done
+        return false; // Return false to indicate sorting is complete
     }
-    else
+
+    int key = data->arr[data->iterCounter];
+    int j = data->iterCounter - 1;
+
+    // Move elements of arr[0...iterCounter-1], that are greater than key, to one position ahead of their current position
+    while (j >= 0 && data->arr[j] > key)
     {
-        // If the current partition is done, pop the next one from the stack
-        if (*top >= 0)
-        {
-            *right = stack[(*top)--];
-            *left = stack[(*top)--];
-            return true;
-        }
-        else
-        {
-            return false; // Return false if sorting is complete
-        }
+        data->arr[j + 1] = data->arr[j];
+        j = j - 1;
     }
+    data->arr[j + 1] = key;
+
+    data->iterCounter++; // Increment the iteration counter
+    return true;         // Return true as more iterations may be required
 }
 
-bool mergeSortIteration(int arr[], int n, int *curr_size, int *left_start)
+// Helper function to merge two subarrays of arr[].
+// First subarray is arr[l..m]
+// Second subarray is arr[m+1..r]
+void merge(SortingData *data, int l, int m, int r)
 {
-    if (*curr_size >= n)
-        return false; // Sorting is complete
+    int i, j, k;
+    int n1 = m - l + 1;
+    int n2 = r - m;
 
-    int mid = *left_start + *curr_size - 1;
-    int right_end = *left_start + 2 * (*curr_size) - 1;
-
-    if (right_end >= n)
-        right_end = n - 1;
-
-    int n1 = mid - *left_start + 1;
-    int n2 = right_end - mid;
-
+    // Create temp arrays using dynamic memory allocation
     int *L = (int *)malloc(n1 * sizeof(int));
     int *R = (int *)malloc(n2 * sizeof(int));
 
-    for (int i = 0; i < n1; i++)
-        L[i] = arr[*left_start + i];
-    for (int j = 0; j < n2; j++)
-        R[j] = arr[mid + 1 + j];
+    if (L == NULL || R == NULL) // Always check if memory allocation was successful
+    {
+        // Handle memory allocation failure, perhaps by exiting or returning an error
+        if (L)
+            free(L);
+        if (R)
+            free(R);
+        return; // or handle this more gracefully
+    }
 
-    int i = 0, j = 0, k = *left_start;
+    for (i = 0; i < n1; i++)
+        L[i] = data->arr[l + i];
+    for (j = 0; j < n2; j++)
+        R[j] = data->arr[m + 1 + j];
 
+    // Merge the temp arrays back into arr[l..r]
+    i = 0;
+    j = 0;
+    k = l;
     while (i < n1 && j < n2)
     {
         if (L[i] <= R[j])
-            arr[k++] = L[i++];
+        {
+            data->arr[k] = L[i];
+            i++;
+        }
         else
-            arr[k++] = R[j++];
+        {
+            data->arr[k] = R[j];
+            j++;
+        }
+        k++;
     }
 
+    // Copy the remaining elements of L[], if there are any
     while (i < n1)
-        arr[k++] = L[i++];
-
-    while (j < n2)
-        arr[k++] = R[j++];
-
-    free(L);
-    free(R);
-
-    *left_start += 2 * (*curr_size);
-
-    if (*left_start >= n)
     {
-        *left_start = 0;
-        *curr_size *= 2;
+        data->arr[k] = L[i];
+        i++;
+        k++;
     }
 
-    return true; // Sorting is not yet complete
+    // Copy the remaining elements of R[], if there are any
+    while (j < n2)
+    {
+        data->arr[k] = R[j];
+        j++;
+        k++;
+    }
+
+    free(L); // Free allocated memory for L
+    free(R); // Free allocated memory for R
 }
 
-// You can add more sorting algorithm implementations here
+bool iterativeMergeSortIteration(SortingData *data)
+{
+    int curr_size = 1 << data->iterCounter; // This will give us 2^iterCounter
+
+    // If the current size exceeds half the array length, we're done. Because, after that point, the array will be completely merged.
+    if (curr_size > data->arraySize / 2)
+        return false;
+
+    int left_start;
+
+    for (left_start = 0; left_start < data->arraySize - 1; left_start += 2 * curr_size)
+    {
+        // Calculate mid point of array.
+        int mid = left_start + curr_size - 1;
+
+        // This adjustment ensures that we're not trying to merge overlapping sections.
+        int right_end = mid + curr_size;
+
+        if (right_end >= data->arraySize)
+        {
+            right_end = data->arraySize - 1;
+        }
+
+        // Merge arrays starting from left_start to right_end.
+        merge(data, left_start, mid, right_end);
+    }
+
+    data->iterCounter++; // increment for the next round
+    return true;
+}
