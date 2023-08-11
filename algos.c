@@ -1,5 +1,5 @@
 #include "algos.h"
-
+#include <stdio.h>
 #include <stdlib.h>
 
 bool bubbleSortIteration(SortingData *data)
@@ -57,27 +57,22 @@ bool insertionSortIteration(SortingData *data)
     return true;         // Return true as more iterations may be required
 }
 
-// Helper function to merge two subarrays of arr[].
-// First subarray is arr[l..m]
-// Second subarray is arr[m+1..r]
-void merge(SortingData *data, int l, int m, int r)
+#define MERGE_LIMIT 5
+void partialMerge(SortingData *data, int l, int m, int r, int *next_start)
 {
     int i, j, k;
     int n1 = m - l + 1;
     int n2 = r - m;
 
-    // Create temp arrays using dynamic memory allocation
+    // Create temp arrays on the stack. We're assuming ARRAY_SIZE is the maximum size.
     int *L = (int *)malloc(n1 * sizeof(int));
     int *R = (int *)malloc(n2 * sizeof(int));
 
-    if (L == NULL || R == NULL) // Always check if memory allocation was successful
+    if (!L || !R)
     {
-        // Handle memory allocation failure, perhaps by exiting or returning an error
-        if (L)
-            free(L);
-        if (R)
-            free(R);
-        return; // or handle this more gracefully
+        // Memory allocation failed; handle this case
+        printf("Memory allocation failed!\n");
+        exit(1);
     }
 
     for (i = 0; i < n1; i++)
@@ -89,7 +84,8 @@ void merge(SortingData *data, int l, int m, int r)
     i = 0;
     j = 0;
     k = l;
-    while (i < n1 && j < n2)
+    int count = 0;
+    while (i < n1 && j < n2 && count < MERGE_LIMIT)
     {
         if (L[i] <= R[j])
         {
@@ -102,55 +98,65 @@ void merge(SortingData *data, int l, int m, int r)
             j++;
         }
         k++;
+        count++;
     }
 
-    // Copy the remaining elements of L[], if there are any
-    while (i < n1)
+    // If we've not hit the merge limit, try to copy remaining elements from L and R.
+    while (i < n1 && count < MERGE_LIMIT)
     {
         data->arr[k] = L[i];
         i++;
         k++;
+        count++;
     }
 
-    // Copy the remaining elements of R[], if there are any
-    while (j < n2)
+    while (j < n2 && count < MERGE_LIMIT)
     {
         data->arr[k] = R[j];
         j++;
         k++;
+        count++;
     }
 
-    free(L); // Free allocated memory for L
-    free(R); // Free allocated memory for R
+    // Update the next_start value based on where we stopped.
+    *next_start = k;
+
+    // If we haven't finished merging this segment, we'll need to pick up from where we left off.
+    // This logic ensures we can continue merging in the next iteration.
+    if (i < n1 || j < n2)
+    {
+        // Storing the current state to continue in the next iteration.
+        data->left_start = l;
+        data->current_mid = m;
+        data->current_end = r;
+    }
+
+    free(L);
+    free(R);
 }
 
 bool iterativeMergeSortIteration(SortingData *data)
 {
-    int curr_size = 1 << data->iterCounter; // This will give us 2^iterCounter
+    int curr_size = 1 << data->iterCounter;
 
-    // If the current size exceeds half the array length, we're done. Because, after that point, the array will be completely merged.
-    if (curr_size > data->arraySize / 2)
-        return false;
-
-    int left_start;
-
-    for (left_start = 0; left_start < data->arraySize - 1; left_start += 2 * curr_size)
+    // If we've finished merging all subarrays of the current size, move to the next size
+    if (data->left_start >= data->arraySize)
     {
-        // Calculate mid point of array.
-        int mid = left_start + curr_size - 1;
+        data->iterCounter++;  // Ready for next round
+        data->left_start = 0; // Reset the left_start
 
-        // This adjustment ensures that we're not trying to merge overlapping sections.
-        int right_end = mid + curr_size;
-
-        if (right_end >= data->arraySize)
-        {
-            right_end = data->arraySize - 1;
-        }
-
-        // Merge arrays starting from left_start to right_end.
-        merge(data, left_start, mid, right_end);
+        curr_size = 1 << data->iterCounter; // Update the curr_size
     }
 
-    data->iterCounter++; // increment for the next round
+    // This checks if we've already merged the entire array
+    if (curr_size >= data->arraySize)
+        return false;
+
+    int mid = data->left_start + curr_size - 1;
+    int right_end = (mid + curr_size < data->arraySize) ? mid + curr_size : data->arraySize - 1;
+
+    // Perform partial merge
+    partialMerge(data, data->left_start, mid, right_end, &data->left_start);
+
     return true;
 }

@@ -17,6 +17,9 @@ typedef struct
     int arr[ARRAY_SIZE];
     int arraySize;
     int iterCounter;
+    int left_start;  // To remember from where we started merging
+    int current_mid; // Current mid during merging
+    int current_end; // Current end during merging
 } SortingData;
 
 typedef bool (*SortingFunction)(SortingData *data);

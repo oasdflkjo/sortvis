@@ -7,21 +7,17 @@
 
 #define ARRAY_SIZE 80
 
-void customDelay(unsigned int milliseconds)
-{
-    clock_t goal = milliseconds + clock();
-    while (goal > clock())
-        ;
-}
+// helpers
+void customDelay(unsigned int milliseconds);
+void printArray(int arr[], int size);
 
-void printArray(int arr[], int size)
-{
-    for (int i = 0; i < size; i++)
-    {
-        printf("%d ", arr[i]);
-    }
-    printf("\n");
-}
+SortingAlgo sortingAlgos[] = {
+    {"Bubble Sort", bubbleSortIteration},
+    {"Merge Sort CRASHES", iterativeMergeSortIteration},
+    {"Insertion Sort", insertionSortIteration},
+    {"Quick Sort TODO", bubbleSortIteration}
+    // Add more algorithms here as needed
+};
 
 void drawArray(int arr[], int arraySize, int frameNumber)
 {
@@ -56,14 +52,6 @@ void visualizeSort(SortingFunction sortFunc)
     customDelay(1000);
     printArray(data.arr, data.arraySize);
 }
-
-SortingAlgo sortingAlgos[] = {
-    {"Bubble Sort", bubbleSortIteration},
-    {"Merge Sort", iterativeMergeSortIteration},
-    {"Quick Sort", bubbleSortIteration},
-    {"Insertion Sort", insertionSortIteration}
-    // Add more algorithms here as needed
-};
 
 void startMenu()
 {
@@ -118,4 +106,20 @@ int main()
 {
     startMenu();
     return 0;
+}
+
+void customDelay(unsigned int milliseconds)
+{
+    clock_t goal = milliseconds + clock();
+    while (goal > clock())
+        ;
+}
+
+void printArray(int arr[], int size)
+{
+    for (int i = 0; i < size; i++)
+    {
+        printf("%d ", arr[i]);
+    }
+    printf("\n");
 }
