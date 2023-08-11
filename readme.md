@@ -3,3 +3,4 @@
 
 - little more structure than in the first iteration
 - algo logic is separated from the gui somewhat dynamically
+- gpt4 is a nice tool but outside of pure template it feels it wastes more time than it saves. (see merge sort implementation :))
