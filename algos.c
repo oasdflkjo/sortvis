@@ -2,12 +2,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Bubble Sort:
+// 1. Start at the beginning of the list.
+// 2. Compare the first two elements.
+//    - If the first is greater than the second, swap them.
+// 3. Move to the next pair of elements and repeat.
+// 4. Continue this for every pair of adjacent elements until the end is reached.
+// 5. After one full pass, the largest element is at the end.
+// 6. Repeat the entire process, excluding the last sorted element.
+// 7. Continue until no more swaps are needed.
 bool bubbleSortIteration(SortingData *data)
 {
     if (data->iterCounter >= data->arraySize - 1)
     {
         // If all iterations are done
-        return false; // Return false to indicate sorting is complete
+        return true; // Return false to indicate sorting is complete
     }
 
     bool swapped = false; // Flag to track if any swaps occurred in this iteration
@@ -27,19 +36,26 @@ bool bubbleSortIteration(SortingData *data)
     if (!swapped && data->iterCounter == 0)
     {
         // If no swaps occurred and it's the first iteration, the array is already sorted
-        return false;
+        return true;
     }
 
     data->iterCounter++; // Increment the iteration counter
-    return true;         // Return true as more iterations may be required
+    return false;        // Return false as more iterations may be required
 }
 
+// Insertion Sort:
+// 1. Start from the second element (assume the first element is sorted).
+// 2. Compare the current element with the previous one.
+//    - If the current element is smaller than the previous, compare it with elements before.
+//      Move the greater elements one position up to make space for the swapped element.
+// 3. Repeat the process for each of the elements in the list.
+// 4. Continue until the entire list is sorted.
 bool insertionSortIteration(SortingData *data)
 {
     if (data->iterCounter >= data->arraySize)
     {
         // If all insertions are done
-        return false; // Return false to indicate sorting is complete
+        return true; // Return false to indicate sorting is complete
     }
 
     int key = data->arr[data->iterCounter];
@@ -54,109 +70,68 @@ bool insertionSortIteration(SortingData *data)
     data->arr[j + 1] = key;
 
     data->iterCounter++; // Increment the iteration counter
-    return true;         // Return true as more iterations may be required
+    return false;        // Return true as more iterations may be required
 }
 
-#define MERGE_LIMIT 5
-void partialMerge(SortingData *data, int l, int m, int r, int *next_start)
+void swap(int *a, int *b)
 {
-    int i, j, k;
-    int n1 = m - l + 1;
-    int n2 = r - m;
+    int t = *a;
+    *a = *b;
+    *b = t;
+}
 
-    // Create temp arrays on the stack. We're assuming ARRAY_SIZE is the maximum size.
-    int *L = (int *)malloc(n1 * sizeof(int));
-    int *R = (int *)malloc(n2 * sizeof(int));
+int partition(SortingData *data)
+{
+    int pivot = data->arr[data->high];
+    int i = data->low - 1;
 
-    if (!L || !R)
+    for (int j = data->low; j <= data->high - 1; j++)
     {
-        // Memory allocation failed; handle this case
-        printf("Memory allocation failed!\n");
-        exit(1);
-    }
-
-    for (i = 0; i < n1; i++)
-        L[i] = data->arr[l + i];
-    for (j = 0; j < n2; j++)
-        R[j] = data->arr[m + 1 + j];
-
-    // Merge the temp arrays back into arr[l..r]
-    i = 0;
-    j = 0;
-    k = l;
-    int count = 0;
-    while (i < n1 && j < n2 && count < MERGE_LIMIT)
-    {
-        if (L[i] <= R[j])
+        if (data->arr[j] <= pivot)
         {
-            data->arr[k] = L[i];
             i++;
+            swap(&data->arr[i], &data->arr[j]);
         }
-        else
-        {
-            data->arr[k] = R[j];
-            j++;
-        }
-        k++;
-        count++;
     }
-
-    // If we've not hit the merge limit, try to copy remaining elements from L and R.
-    while (i < n1 && count < MERGE_LIMIT)
-    {
-        data->arr[k] = L[i];
-        i++;
-        k++;
-        count++;
-    }
-
-    while (j < n2 && count < MERGE_LIMIT)
-    {
-        data->arr[k] = R[j];
-        j++;
-        k++;
-        count++;
-    }
-
-    // Update the next_start value based on where we stopped.
-    *next_start = k;
-
-    // If we haven't finished merging this segment, we'll need to pick up from where we left off.
-    // This logic ensures we can continue merging in the next iteration.
-    if (i < n1 || j < n2)
-    {
-        // Storing the current state to continue in the next iteration.
-        data->left_start = l;
-        data->current_mid = m;
-        data->current_end = r;
-    }
-
-    free(L);
-    free(R);
+    swap(&data->arr[i + 1], &data->arr[data->high]);
+    return i + 1;
 }
 
-bool iterativeMergeSortIteration(SortingData *data)
+bool iterativeQuickSort(SortingData *data)
 {
-    int curr_size = 1 << data->iterCounter;
-
-    // If we've finished merging all subarrays of the current size, move to the next size
-    if (data->left_start >= data->arraySize)
+    // Initialization for the first call
+    if (data->iterCounter == 0)
     {
-        data->iterCounter++;  // Ready for next round
-        data->left_start = 0; // Reset the left_start
-
-        curr_size = 1 << data->iterCounter; // Update the curr_size
+        data->stackTop = -1;
+        data->stack[++data->stackTop] = (Range){data->low, data->high};
     }
 
-    // This checks if we've already merged the entire array
-    if (curr_size >= data->arraySize)
-        return false;
+    // If the stack is empty, sorting is complete
+    if (data->stackTop == -1)
+    {
+        return true;
+    }
 
-    int mid = data->left_start + curr_size - 1;
-    int right_end = (mid + curr_size < data->arraySize) ? mid + curr_size : data->arraySize - 1;
+    // Pop a range from the stack
+    Range currentRange = data->stack[data->stackTop--];
+    data->low = currentRange.low;
+    data->high = currentRange.high;
 
-    // Perform partial merge
-    partialMerge(data, data->left_start, mid, right_end, &data->left_start);
+    if (data->low < data->high)
+    {
+        int pi = partition(data);
 
-    return true;
+        // Push the resulting sub-ranges onto the stack
+        if (pi - 1 > data->low)
+        {
+            data->stack[++data->stackTop] = (Range){data->low, pi - 1};
+        }
+        if (pi + 1 < data->high)
+        {
+            data->stack[++data->stackTop] = (Range){pi + 1, data->high};
+        }
+    }
+
+    data->iterCounter++;
+    return data->stackTop == -1; // Return true if sorting is complete, false otherwise
 }

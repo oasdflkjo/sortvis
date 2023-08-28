@@ -1,12 +1,11 @@
 #include "raylib.h"
 #include "algos.h" // You can still use this if you have specific functions you want
 #include "debug.h"
+#include "platform_sleep.h"
 #include <stdbool.h>
 #include <stdlib.h>
-#include <time.h>
 #include <stdio.h>
 
-#define ARRAY_SIZE 80
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define FPS_LIMIT 120
@@ -14,14 +13,15 @@
 #define LINE_SPACING 30
 #define SORTING_ALGOS_COUNT (sizeof(sortingAlgos) / sizeof(sortingAlgos[0]))
 
-// helpers
-void customDelay(unsigned int milliseconds);
+void drawArray(int arr[], int arraySize, int frameNumber);
+void visualizeSort(SortingFunction sortFunc);
+void handleKeys(int *selectedMethod);
+void drawMenu(int selectedMethod);
 
 SortingAlgo sortingAlgos[] = {
     {"Bubble Sort", bubbleSortIteration},
     {"Insertion Sort", insertionSortIteration},
-    {"Quick Sort TODO", bubbleSortIteration},
-    {"Merge Sort CRASHES", iterativeMergeSortIteration}
+    {"Quick Sort", iterativeQuickSort}
     // Add more algorithms here as needed
 };
 
@@ -33,8 +33,7 @@ void drawArray(int arr[], int arraySize, int frameNumber)
     {
         DrawRectangle(i * 10, 600 - arr[i], 10, arr[i], RED);
     }
-
-    // Draw the call number
+    platformSleep(20);
     DrawText(TextFormat("Calls: %d", frameNumber), 10, 10, 20, BLACK);
 
     EndDrawing();
@@ -45,18 +44,22 @@ void visualizeSort(SortingFunction sortFunc)
     SortingData data;
     data.iterCounter = 0;
     data.arraySize = ARRAY_SIZE;
+    data.low = 0;
+    data.high = ARRAY_SIZE - 1;
 
     for (int i = 0; i < ARRAY_SIZE; i++)
     {
         data.arr[i] = GetRandomValue(10, 580);
     }
 
-    while (!WindowShouldClose() && sortFunc(&data))
+    while (!WindowShouldClose() && !sortFunc(&data))
     {
         drawArray(data.arr, data.arraySize, data.iterCounter);
     }
-    customDelay(1000);
+    drawArray(data.arr, data.arraySize, data.iterCounter); // quick sort needs a one final print for some reason
+    WaitTime(2);
     printArray(data.arr, data.arraySize);
+    isArraySorted(data.arr, data.arraySize);
 }
 
 void handleKeys(int *selectedMethod)
@@ -110,11 +113,4 @@ int main()
 {
     startMenu();
     return 0;
-}
-
-void customDelay(unsigned int milliseconds)
-{
-    clock_t goal = milliseconds + clock();
-    while (goal > clock())
-        ;
 }

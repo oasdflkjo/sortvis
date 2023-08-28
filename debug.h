@@ -5,6 +5,7 @@
 
 // Function declarations
 void printArray(const int arr[], int size);
+void isArraySorted(int arr[], int size);
 // ... other debug utility function declarations ...
 
 #endif // DEBUG_H
